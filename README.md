@@ -30,7 +30,7 @@ dotnet add package A2A.V0_3
 ### Core A2A Library
 
 ```bash
-dotnet add package A2A
+dotnet add package A2As
 ```
 
 ### ASP.NET Core Extensions
