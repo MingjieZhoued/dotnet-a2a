@@ -27,7 +27,7 @@ dotnet add package A2A.V0_3
 
 ## Installation
 
-### Core A2A Library
+### Core A2A Libraries
 
 ```bash
 dotnet add package A2A
