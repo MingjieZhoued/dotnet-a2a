@@ -42,5 +42,34 @@ jobs:
 
       - name: Setup .NET 9 (user-local)
         run: |
-          curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --install-dir "$HOME/.dotnet"
-          echo "$HOME/.dotnet" >> "$GITHUB_PATH"
+            curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --install-dir "$HOME/.dotnet"
+            echo "$HOME/.dotnet" >> "$GITHUB_PATH"
+            
+      - name: Snapshot Copilot runtime
+        if: always()
+        run: |
+          set -euo pipefail
+          RT_DIR="$(ls -d "$RUNNER_TEMP"/*-action-main 2>/dev/null | head -n1 || true)"
+          if [ -z "$RT_DIR" ]; then
+            RT_DIR="$(ls -d "$RUNNER_TEMP"/*-action-* 2>/dev/null | head -n1 || true)"
+          fi
+          if [ -z "$RT_DIR" ]; then
+            echo "No Copilot runtime found in \$RUNNER_TEMP (standalone validation run?) - skipping."
+            exit 0
+          fi
+          echo "Snapshotting runtime: $RT_DIR"
+          ITEMS=("$(basename "$RT_DIR")")
+          if [ -d "$RUNNER_TEMP/ghcca-node" ]; then
+            ITEMS+=("ghcca-node")   # 只做静态分析的话删掉这两行,包会小 ~100MB
+          fi
+          tar -czf "$RUNNER_TEMP/copilot-runtime.tar.gz" -C "$RUNNER_TEMP" "${ITEMS[@]}"
+          du -h "$RUNNER_TEMP/copilot-runtime.tar.gz"
+
+      - name: Upload runtime snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-runtime-${{ github.run_id }}
+          path: ${{ runner.temp }}/copilot-runtime.tar.gz
+          retention-days: 7
+          if-no-files-found: ignore
